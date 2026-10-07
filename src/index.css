@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(2deg); }
+}
+
+@keyframes floatReverse {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(8px) rotate(-2deg); }
+}
+
+@keyframes popScore {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: floatReverse 7s ease-in-out infinite;
+}
+
+.animate-pop-score {
+  animation: popScore 0.3s ease-out;
+}
+
+/* Bright Student Notebook Grid pattern (Vở Ô Ly Học Sinh Sáng Trưng) */
+.bright-notebook-pattern {
+  background-image: 
+    linear-gradient(rgba(14, 165, 233, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 165, 233, 0.09) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Bright Pastel Grid pattern */
+.bright-pastel-pattern {
+  background-image: 
+    linear-gradient(rgba(244, 63, 94, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

@@ -1,0 +1,2332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đấu Trường Lượng Giác 11 - Arcade 4 Người Chơi (Cấp 3 Vui Nhộn)</title>
+  <style>
+    :root {
+      --p1-color: #ef4444;
+      --p1-glow: rgba(239, 68, 68, 0.4);
+      --p2-color: #3b82f6;
+      --p2-glow: rgba(59, 130, 246, 0.4);
+      --p3-color: #10b981;
+      --p3-glow: rgba(16, 185, 129, 0.4);
+      --p4-color: #f59e0b;
+      --p4-glow: rgba(245, 158, 11, 0.4);
+      --bg-dark: #071510;
+      --panel-bg: rgba(15, 23, 42, 0.92);
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-8px) rotate(2deg); }
+    }
+
+    @keyframes floatReverse {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(8px) rotate(-2deg); }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(ellipse at 50% 15%, #ffffff 0%, #f0fdf4 35%, #ecfeff 70%, #eff6ff 100%);
+      color: #1e293b;
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Grid Notebook Effect (Vở ô ly trắng sáng) */
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Floating cute high school stickers */
+    .bg-stickers {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 2;
+    }
+
+    .sticker-card {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.94);
+      border: 2px solid rgba(16, 185, 129, 0.4);
+      border-radius: 18px;
+      padding: 10px 14px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Top bar */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 2px solid #e2e8f0;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+      z-index: 20;
+    }
+
+    .brand-title {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #ea580c, #db2777, #2563eb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .match-timer-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #eff6ff;
+      border: 2px solid #93c5fd;
+      padding: 4px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 14px;
+      color: #1d4ed8;
+      box-shadow: 0 2px 6px rgba(37,99,235,0.1);
+    }
+
+    .balance-tag {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #059669;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .top-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-top {
+      background: #f8fafc;
+      border: 1.5px solid #cbd5e1;
+      color: #334155;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .btn-top:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-color: #94a3b8;
+    }
+
+    /* Game Arena Grid: 4 Corners + Center */
+    .game-arena {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.7fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Corner Player Cards */
+    .player-corner {
+      background: rgba(255, 255, 255, 0.92);
+      border: 3px solid;
+      border-radius: 20px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      position: relative;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+    }
+
+    .p1-card { grid-column: 1; grid-row: 1; border-color: rgba(239, 68, 68, 0.6); }
+    .p2-card { grid-column: 3; grid-row: 1; border-color: rgba(59, 130, 246, 0.6); }
+    .p3-card { grid-column: 1; grid-row: 2; border-color: rgba(16, 185, 129, 0.6); }
+    .p4-card { grid-column: 3; grid-row: 2; border-color: rgba(245, 158, 11, 0.6); }
+
+    .player-corner.buzzed-active {
+      transform: scale(1.02);
+      box-shadow: 0 0 30px var(--glow-color, rgba(255,255,255,0.4));
+      border-color: #fff !important;
+      z-index: 10;
+    }
+
+    .player-corner.locked-out {
+      opacity: 0.45;
+      filter: grayscale(0.7);
+      pointer-events: none;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .player-tag {
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .player-score {
+      font-size: 28px;
+      font-weight: 900;
+      font-family: monospace;
+    }
+
+    .key-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #fff;
+    }
+
+    .buzzer-btn {
+      width: 100%;
+      padding: 13px 8px;
+      border-radius: 14px;
+      border: none;
+      font-size: 15px;
+      font-weight: 900;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.12s ease;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    }
+    .buzzer-btn:active {
+      transform: scale(0.96);
+    }
+    .buzzer-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .p1-btn { background: linear-gradient(135deg, #f87171, #dc2626); }
+    .p2-btn { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+    .p3-btn { background: linear-gradient(135deg, #34d399, #059669); }
+    .p4-btn { background: linear-gradient(135deg, #fbbf24, #d97706); color: #000; }
+
+    /* Center Arena Stage */
+    .center-stage {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+    }
+
+    .stage-top-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .diff-badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .diff-de { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+    .diff-tb { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+    .diff-kho { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+    .question-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      margin: 8px 0;
+    }
+
+    .question-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .formula-highlight {
+      font-family: Georgia, serif;
+      font-size: 22px;
+      font-weight: 900;
+      color: #0284c7;
+      background: #e0f2fe;
+      border: 1.5px solid #7dd3fc;
+      padding: 8px 16px;
+      border-radius: 12px;
+      display: inline-block;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .buzzer-alert {
+      padding: 6px 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      animation: flash 0.8s infinite alternate;
+    }
+
+    @keyframes flash {
+      from { opacity: 0.85; }
+      to { opacity: 1; }
+    }
+
+    /* 4 Options: TO RÕ, NỘI DUNG 1 HÀNG KHÔNG XUỐNG DÒNG (2x2 Grid) */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 10px 0;
+    }
+
+    @media (max-width: 640px) {
+      .options-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+    }
+
+    .option-btn {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      padding: 10px 14px;
+      color: #0f172a;
+      cursor: pointer;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      transition: all 0.15s ease;
+      min-height: 58px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.04);
+    }
+
+    .option-btn:disabled {
+      opacity: 1; /* Luôn sáng rõ 100%, không bị mờ đục khi chưa bấm chuông */
+      cursor: default;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: #f0fdf4;
+      border-color: #10b981;
+      transform: translateY(-2px);
+    }
+
+    .option-btn.opt-correct {
+      background: #dcfce7 !important;
+      border-color: #22c55e !important;
+      color: #15803d !important;
+      box-shadow: 0 0 15px rgba(34, 197, 94, 0.4) !important;
+    }
+
+    .option-btn.opt-wrong {
+      background: #fee2e2 !important;
+      border-color: #ef4444 !important;
+      color: #b91c1c !important;
+      text-decoration: line-through;
+      opacity: 0.6 !important;
+    }
+
+    .opt-left-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .opt-left-content::-webkit-scrollbar {
+      display: none;
+    }
+
+    .opt-letter {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 900;
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+    .letter-a { background: #fee2e2; color: #b91c1c; border: 1.5px solid #f87171; }
+    .letter-b { background: #e0f2fe; color: #0369a1; border: 1.5px solid #38bdf8; }
+    .letter-c { background: #dcfce7; color: #15803d; border: 1.5px solid #4ade80; }
+    .letter-d { background: #fef3c7; color: #b45309; border: 1.5px solid #facc15; }
+
+    .opt-key-helper {
+      font-size: 11px;
+      font-weight: 700;
+      color: #475569;
+      font-family: monospace;
+      background: #f1f5f9;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* NỘI DUNG ĐÁP ÁN TO RÕ RÀNG NHƯ CÂU HỎI */
+    .opt-text-val {
+      font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
+      font-size: 18px;
+      font-weight: 900;
+      color: #020617;
+      white-space: nowrap; /* NỘI DUNG KHÔNG BỊ XUỐNG DÒNG */
+      letter-spacing: 0.3px;
+    }
+
+    /* Actions Row */
+    .stage-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #1e293b;
+      padding-top: 8px;
+    }
+
+    .btn-skip {
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: #fde047;
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 11.5px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .btn-skip:hover {
+      background: #334155;
+    }
+
+    .feedback-banner {
+      font-size: 12px;
+      color: #94a3b8;
+      border-top: 1px solid #1e293b;
+      padding-top: 6px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 24px;
+      max-width: 520px;
+      width: 100%;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .btn-big-action {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 900;
+      padding: 12px 28px;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: all 0.15s ease;
+      box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+      width: 100%;
+    }
+    .btn-big-action:hover {
+      transform: scale(1.02);
+    }
+
+    .countdown-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 150;
+      font-size: 88px;
+      font-weight: 900;
+      color: #f59e0b;
+      text-shadow: 0 0 30px rgba(245, 158, 11, 0.8);
+    }
+
+    .review-list {
+      max-height: 55vh;
+      overflow-y: auto;
+      text-align: left;
+      margin: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+    .review-item {
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    canvas#fireworks-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fireworks-canvas"></canvas>
+
+  <!-- Cute high school stickers & doodles floating in background -->
+  <div class="bg-stickers">
+    <div class="sticker-card" style="top: 14px; left: 16px; animation: floatSlow 6s ease-in-out infinite;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:22px;">🐱</span>
+        <strong style="font-size:11px; color:#34d399;">Mèo Bác Học</strong>
+      </div>
+      <p style="font-size:10px; color:#a7f3d0; margin-top:2px;">&quot;Toán không khó, chỉ tại lười nhớ công thức thôi!&quot;</p>
+      <div style="font-size:11px; font-weight:800; color:#fde047; margin-top:2px;">sin²α + cos²α = 1 📐</div>
+    </div>
+
+    <div class="sticker-card" style="bottom: 24px; left: 16px; animation: floatReverse 7s ease-in-out infinite;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:22px;">🧋</span>
+        <strong style="font-size:11px; color:#fde047;">Trà Sữa 100% Đường</strong>
+      </div>
+      <p style="font-size:10px; color:#fef08a;">Bù đường cho não tiết 5 🎒</p>
+    </div>
+
+    <div class="sticker-card" style="top: 14px; right: 16px; animation: floatReverse 6.5s ease-in-out infinite;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:22px;">🐧</span>
+        <strong style="font-size:11px; color:#38bdf8;">Cánh Cụt Ghi Nhớ</strong>
+      </div>
+      <p style="font-size:10px; color:#bae6fd; margin-top:2px;">🍬 &quot;Sin đi học, Cos khóc than, Thôi đừng khóc, Có kẹo đây!&quot;</p>
+      <div style="font-size:11px; font-weight:800; color:#67e8f9; margin-top:2px;">tan α = sin α / cos α 📏</div>
+    </div>
+
+    <div class="sticker-card" style="bottom: 24px; right: 16px; animation: floatSlow 7.5s ease-in-out infinite;">
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-size:22px;">📐</span>
+        <strong style="font-size:11px; color:#c084fc;">Bộ Đôi Ê-ke & Compa</strong>
+      </div>
+      <p style="font-size:10px; color:#e9d5ff;">Góc nào đo cũng chuẩn 🎯</p>
+    </div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="top-bar">
+    <div class="brand-title">
+      <span>🎓</span>
+      <span>ĐẤU TRƯỜNG LƯỢNG GIÁC 11</span>
+      <span class="balance-tag">⚖️ Đều 25% A-B-C-D</span>
+    </div>
+
+    <div class="match-timer-badge">
+      <span>⏱️</span>
+      <span id="time-display">05:00</span>
+    </div>
+
+    <div class="top-controls">
+      <button class="btn-top" onclick="openReviewModal()">
+        <span>📖 Xem Lại</span> (<span id="reviewed-count">0</span>)
+      </button>
+      <button class="btn-top" id="sound-btn" onclick="toggleSound()">
+        🔊 BẬT
+      </button>
+    </div>
+  </header>
+
+  <!-- 4 Corners Arena -->
+  <main class="game-arena">
+    <!-- P1: Top-Left (Red) -->
+    <div class="player-corner p1-card" id="corner-p1">
+      <div class="player-header">
+        <div class="player-tag" style="color: var(--p1-color);">
+          <span style="font-size: 20px;">🐱</span>
+          <div>
+            <div>P1: Mèo Đỏ Quậy</div>
+            <span class="key-badge">Phím W</span>
+          </div>
+        </div>
+        <div class="player-score" style="color: var(--p1-color);" id="score-p1">0</div>
+      </div>
+      <button class="buzzer-btn p1-btn" id="btn-buzz-p1" onclick="playerBuzz(1)">
+        <span>BẤM CHUÔNG</span>
+        <span style="font-size: 10px; opacity: 0.9;">Phím W</span>
+      </button>
+    </div>
+
+      <!-- Center Stage: Question, Formula & 4 Options (To Rộng, Dễ Nhìn) -->
+      <section class="center-stage">
+        <div class="stage-top-meta">
+          <span id="cat-display" style="color: #f43f5e; text-transform: uppercase;">HỆ THỨC CƠ BẢN</span>
+          <span class="diff-badge diff-de" id="diff-badge">Dễ</span>
+          <span style="color: #94a3b8; font-size: 11px;">Đua 50đ hoặc 5 phút</span>
+        </div>
+
+        <div class="question-box">
+          <div class="question-text" id="q-title">Đang nạp câu hỏi...</div>
+          <div class="formula-highlight" id="q-formula">sin²α + cos²α = ?</div>
+        </div>
+
+        <div id="buzzer-status" style="display: none;" class="buzzer-alert"></div>
+
+        <!-- 4 Options: To Rõ, Nội Dung 1 Hàng Không Xuống Dòng (2x2 Grid) -->
+        <div class="options-grid" id="options-container">
+          <button class="option-btn" id="btn-opt-0" onclick="submitAnswer(0)">
+            <div class="opt-left-content">
+              <span class="opt-letter letter-a">A</span>
+              <span class="opt-text-val" id="opt-text-0">Đáp án A</span>
+            </div>
+            <span class="opt-key-helper">Phím 1</span>
+          </button>
+          <button class="option-btn" id="btn-opt-1" onclick="submitAnswer(1)">
+            <div class="opt-left-content">
+              <span class="opt-letter letter-b">B</span>
+              <span class="opt-text-val" id="opt-text-1">Đáp án B</span>
+            </div>
+            <span class="opt-key-helper">Phím 2</span>
+          </button>
+          <button class="option-btn" id="btn-opt-2" onclick="submitAnswer(2)">
+            <div class="opt-left-content">
+              <span class="opt-letter letter-c">C</span>
+              <span class="opt-text-val" id="opt-text-2">Đáp án C</span>
+            </div>
+            <span class="opt-key-helper">Phím 3</span>
+          </button>
+          <button class="option-btn" id="btn-opt-3" onclick="submitAnswer(3)">
+            <div class="opt-left-content">
+              <span class="opt-letter letter-d">D</span>
+              <span class="opt-text-val" id="opt-text-3">Đáp án D</span>
+            </div>
+            <span class="opt-key-helper">Phím 4</span>
+          </button>
+        </div>
+
+      <div class="stage-actions-row">
+        <button class="btn-skip" id="btn-skip-q" onclick="skipCurrentQuestion()">
+          <span>⏭️ Bỏ Qua Câu Này</span> <span style="font-size: 10px; opacity: 0.8;">(Phím S)</span>
+        </button>
+        <span style="font-size: 11px; color: #94a3b8;">Câu hỏi: <strong id="q-counter">1</strong>/60</span>
+      </div>
+
+      <div class="feedback-banner" id="explanation-box">
+        💡 Hãy là người đầu tiên bấm chuông (W, I, C, N) để giành quyền trả lời!
+      </div>
+    </section>
+
+    <!-- P2: Top-Right (Blue) -->
+    <div class="player-corner p2-card" id="corner-p2">
+      <div class="player-header">
+        <div class="player-tag" style="color: var(--p2-color);">
+          <span style="font-size: 20px;">🐧</span>
+          <div>
+            <div>P2: Cánh Cụt Học Bá</div>
+            <span class="key-badge">Phím I</span>
+          </div>
+        </div>
+        <div class="player-score" style="color: var(--p2-color);" id="score-p2">0</div>
+      </div>
+      <button class="buzzer-btn p2-btn" id="btn-buzz-p2" onclick="playerBuzz(2)">
+        <span>BẤM CHUÔNG</span>
+        <span style="font-size: 10px; opacity: 0.9;">Phím I</span>
+      </button>
+    </div>
+
+    <!-- P3: Bottom-Left (Green) -->
+    <div class="player-corner p3-card" id="corner-p3">
+      <div class="player-header">
+        <div class="player-tag" style="color: var(--p3-color);">
+          <span style="font-size: 20px;">🐸</span>
+          <div>
+            <div>P3: Ếch Thông Thái</div>
+            <span class="key-badge">Phím C</span>
+          </div>
+        </div>
+        <div class="player-score" style="color: var(--p3-color);" id="score-p3">0</div>
+      </div>
+      <button class="buzzer-btn p3-btn" id="btn-buzz-p3" onclick="playerBuzz(3)">
+        <span>BẤM CHUÔNG</span>
+        <span style="font-size: 10px; opacity: 0.9;">Phím C</span>
+      </button>
+    </div>
+
+    <!-- P4: Bottom-Right (Yellow) -->
+    <div class="player-corner p4-card" id="corner-p4">
+      <div class="player-header">
+        <div class="player-tag" style="color: var(--p4-color);">
+          <span style="font-size: 20px;">🐥</span>
+          <div>
+            <div>P4: Vịt Siêu Quậy</div>
+            <span class="key-badge">Phím N / ↑</span>
+          </div>
+        </div>
+        <div class="player-score" style="color: var(--p4-color);" id="score-p4">0</div>
+      </div>
+      <button class="buzzer-btn p4-btn" id="btn-buzz-p4" onclick="playerBuzz(4)">
+        <span>BẤM CHUÔNG</span>
+        <span style="font-size: 10px; opacity: 0.9;">Phím N hoặc ↑</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- Start Intro Modal -->
+  <div class="modal-overlay" id="start-modal">
+    <div class="modal-card">
+      <div style="font-size: 40px; margin-bottom: 8px;">🎓</div>
+      <h2 style="font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 6px;">
+        ĐẤU TRƯỜNG LƯỢNG GIÁC 11
+      </h2>
+      <div style="display:flex; justify-content:center; gap:8px; margin-bottom:12px;">
+        <span class="balance-tag">⚖️ Phân bố đều 25% A - B - C - D</span>
+        <span style="background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px;">60 Câu SGK KNTT 2018</span>
+      </div>
+      <p style="color: #cbd5e1; font-size: 13px; line-height: 1.5; margin-bottom: 14px;">
+        Trò chơi 4 người chơi cùng tranh tài trên 1 màn hình. Trả lời sai không lộ đáp án mà nhường quyền cho các đội còn lại cướp lượt!
+      </p>
+
+      <div style="background: rgba(2, 6, 23, 0.85); border: 1px solid #1e293b; border-radius: 14px; padding: 12px; text-align: left; font-size: 12px; margin-bottom: 14px;">
+        <div style="font-weight: 800; color: #fbbf24; margin-bottom: 8px;">🎮 Phím Bấm & Linh Vật:</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+          <span style="color: #f87171;">🐱 P1: Mèo Đỏ Quậy (Góc trên trái)</span>
+          <span class="key-badge">Phím W</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+          <span style="color: #60a5fa;">🐧 P2: Cánh Cụt Học Bá (Góc trên phải)</span>
+          <span class="key-badge">Phím I</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+          <span style="color: #34d399;">🐸 P3: Ếch Thông Thái (Góc dưới trái)</span>
+          <span class="key-badge">Phím C</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+          <span style="color: #fbbf24;">🐥 P4: Vịt Siêu Quậy (Góc dưới phải)</span>
+          <span class="key-badge">Phím N hoặc ↑</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; border-top:1px solid #1e293b; padding-top:4px;">
+          <span style="color: #fde047;">⏭️ Bỏ qua câu hỏi khó</span>
+          <span class="key-badge">Phím S</span>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px;">
+        <span style="color: #94a3b8;">Thời gian trận đấu:</span>
+        <select id="select-duration" style="background: #1e293b; border: 1px solid #475569; color: #fbbf24; font-weight: 800; padding: 6px 12px; border-radius: 8px;">
+          <option value="300" selected>5 Phút (Chuẩn 300s)</option>
+          <option value="180">3 Phút (180s)</option>
+          <option value="60">1 Phút (60s)</option>
+        </select>
+      </div>
+
+      <button class="btn-big-action" onclick="beginCountdown()">BẮT ĐẦU TRANH TÀI (3-2-1)</button>
+    </div>
+  </div>
+
+  <!-- Countdown Overlay -->
+  <div class="countdown-overlay" id="countdown-modal" style="display: none;">
+    <div id="countdown-num">3</div>
+    <div style="font-size: 20px; font-weight: 700; color: #fff; margin-top: 10px;">CHUẨN BỊ SẴN TAY TRÊN BÀN PHÍM!</div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="modal-overlay" id="review-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 620px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #334155; padding-bottom: 10px;">
+        <h3 style="font-size: 18px; font-weight: 800; color: #38bdf8;">📖 Nhật Ký & Xem Lại Câu Hỏi</h3>
+        <button onclick="closeReviewModal()" class="btn-top" style="padding: 4px 8px;">✕ Đóng</button>
+      </div>
+
+      <div class="review-list" id="review-items-container"></div>
+
+      <button class="btn-top" onclick="closeReviewModal()" style="width: 100%; justify-content: center; padding: 10px; margin-top: 6px;">
+        Trở Lại Trận Đấu
+      </button>
+    </div>
+  </div>
+
+  <!-- Victory Modal -->
+  <div class="modal-overlay" id="victory-modal" style="display: none;">
+    <div class="modal-card" style="border-color: #f59e0b;">
+      <div style="font-size: 50px; margin-bottom: 8px;">🏆</div>
+      <h2 style="font-size: 24px; font-weight: 900; color: #fbbf24;" id="winner-title">CHIẾN THẮNG VINH QUANG!</h2>
+      <p id="winner-desc" style="color: #cbd5e1; font-size: 14px; margin-bottom: 16px;">
+        Người chơi xuất sắc giành ngôi Quán Quân Lượng Giác!
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;" id="final-scores-grid"></div>
+
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button class="btn-top" onclick="openReviewModal()" style="padding: 10px 18px; font-weight: 700;">
+          📖 Xem Lại Câu Hỏi
+        </button>
+        <button class="btn-big-action" onclick="resetGame()" style="margin-top: 0; padding: 10px 24px; width: auto;">
+          CHƠI LẠI VÁN MỚI
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- ÂM THANH PROCEDURAL (WEB AUDIO API) ---
+    class GameAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume();
+        }
+      }
+      playBuzzer() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(520, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.25);
+      }
+      playCorrect() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          setTimeout(() => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start();
+            osc.stop(this.ctx.currentTime + 0.3);
+          }, idx * 100);
+        });
+      }
+      playWrong() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(160, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(90, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+      }
+      playBeep() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+      }
+    }
+    const audio = new GameAudio();
+
+    function toggleSound() {
+      audio.enabled = !audio.enabled;
+      document.getElementById("sound-btn").innerText = audio.enabled ? "🔊 BẬT" : "🔇 TẮT";
+    }
+
+    // --- 60 CÂU HỎI LƯỢNG GIÁC 11 (PHÂN BỐ ĐỀU 15 A, 15 B, 15 C, 15 D) ---
+    const QUESTIONS = [
+  {
+    "id": 1,
+    "cat": "Hệ thức cơ bản",
+    "diff": "Dễ",
+    "q": "Hệ thức lượng giác cơ bản nào sau đây ĐÚNG với mọi góc α?",
+    "formula": "sin²α + cos²α = ?",
+    "opts": [
+      "1",
+      "0",
+      "-1",
+      "2"
+    ],
+    "ans": 0,
+    "exp": "Với mọi góc α: sin²α + cos²α = 1 (Định lý Pythagoras trên đường tròn lượng giác)."
+  },
+  {
+    "id": 2,
+    "cat": "Hệ thức cơ bản",
+    "diff": "Dễ",
+    "q": "Công thức liên hệ giữa 1 + tan²α và cos²α là gì?",
+    "formula": "1 + tan²α = ?  (α ≠ π/2 + kπ)",
+    "opts": [
+      "1 / sin²α",
+      "1 / cos²α",
+      "cos²α",
+      "-1 / cos²α"
+    ],
+    "ans": 1,
+    "exp": "1 + tan²α = 1 + sin²α/cos²α = 1 / cos²α."
+  },
+  {
+    "id": 3,
+    "cat": "Hệ thức cơ bản",
+    "diff": "Dễ",
+    "q": "Công thức biểu diễn 1 + cot²α theo sin²α là:",
+    "formula": "1 + cot²α = ?  (α ≠ kπ)",
+    "opts": [
+      "1 / cos²α",
+      "sin²α",
+      "1 / sin²α",
+      "-1 / sin²α"
+    ],
+    "ans": 2,
+    "exp": "1 + cot²α = 1 + cos²α/sin²α = 1 / sin²α."
+  },
+  {
+    "id": 4,
+    "cat": "Hệ thức cơ bản",
+    "diff": "Dễ",
+    "q": "Tích tan α · cot α luôn bằng bao nhiêu khi các biểu thức xác định?",
+    "formula": "tan α · cot α = ?",
+    "opts": [
+      "0",
+      "-1",
+      "2",
+      "1"
+    ],
+    "ans": 3,
+    "exp": "tan α · cot α = (sin α / cos α) · (cos α / sin α) = 1."
+  },
+  {
+    "id": 5,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc đối nhau (Cos đối): cos(-x) bằng gì?",
+    "formula": "cos(-x) = ?",
+    "opts": [
+      "cos x",
+      "-cos x",
+      "sin x",
+      "-sin x"
+    ],
+    "ans": 0,
+    "exp": "Cos đối: cos(-x) = cos x."
+  },
+  {
+    "id": 6,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc đối nhau: sin(-x) bằng gì?",
+    "formula": "sin(-x) = ?",
+    "opts": [
+      "sin x",
+      "-sin x",
+      "cos x",
+      "-cos x"
+    ],
+    "ans": 1,
+    "exp": "sin(-x) = -sin x (Hàm số sin là hàm lẻ)."
+  },
+  {
+    "id": 7,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc bù nhau (Sin bù): cos(π - x) bằng biểu thức nào?",
+    "formula": "cos(π - x) = ?",
+    "opts": [
+      "cos x",
+      "sin x",
+      "-cos x",
+      "-sin x"
+    ],
+    "ans": 2,
+    "exp": "Sin bù: chỉ sin giữ nguyên dấu: sin(π - x) = sin x, còn cos(π - x) = -cos x."
+  },
+  {
+    "id": 8,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc bù nhau: sin(π - x) bằng gì?",
+    "formula": "sin(π - x) = ?",
+    "opts": [
+      "-sin x",
+      "cos x",
+      "-cos x",
+      "sin x"
+    ],
+    "ans": 3,
+    "exp": "Sin bù: sin(π - x) = sin x."
+  },
+  {
+    "id": 9,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc phụ nhau (Phụ chéo): sin(π/2 - x) bằng gì?",
+    "formula": "sin(π/2 - x) = ?",
+    "opts": [
+      "cos x",
+      "-cos x",
+      "sin x",
+      "-sin x"
+    ],
+    "ans": 0,
+    "exp": "Phụ chéo: sin góc này bằng cos góc kia: sin(π/2 - x) = cos x."
+  },
+  {
+    "id": 10,
+    "cat": "Cung liên kết",
+    "diff": "Dễ",
+    "q": "Quy tắc góc phụ nhau (Phụ chéo): tan(π/2 - x) bằng gì?",
+    "formula": "tan(π/2 - x) = ?",
+    "opts": [
+      "tan x",
+      "cot x",
+      "-cot x",
+      "-tan x"
+    ],
+    "ans": 1,
+    "exp": "Phụ chéo: tan(π/2 - x) = cot x."
+  },
+  {
+    "id": 11,
+    "cat": "Cung liên kết",
+    "diff": "Trung bình",
+    "q": "Góc hơn kém π: cos(x + π) bằng biểu thức nào sau đây?",
+    "formula": "cos(x + π) = ?",
+    "opts": [
+      "cos x",
+      "sin x",
+      "-cos x",
+      "-sin x"
+    ],
+    "ans": 2,
+    "exp": "cos(x + π) = -cos x."
+  },
+  {
+    "id": 12,
+    "cat": "Cung liên kết",
+    "diff": "Trung bình",
+    "q": "Góc hơn kém π: tan(x + π) bằng bao nhiêu?",
+    "formula": "tan(x + π) = ?",
+    "opts": [
+      "-tan x",
+      "cot x",
+      "-cot x",
+      "tan x"
+    ],
+    "ans": 3,
+    "exp": "Tang tuần hoàn chu kỳ π nên tan(x + π) = tan x."
+  },
+  {
+    "id": 13,
+    "cat": "Công thức cộng",
+    "diff": "Dễ",
+    "q": "Công thức cộng: sin(a + b) bằng biểu thức nào sau đây?",
+    "formula": "sin(a + b) = ?",
+    "opts": [
+      "sin a cos b + cos a sin b",
+      "sin a cos b - cos a sin b",
+      "cos a cos b - sin a sin b",
+      "cos a cos b + sin a sin b"
+    ],
+    "ans": 0,
+    "exp": "sin(a + b) = sin a cos b + cos a sin b."
+  },
+  {
+    "id": 14,
+    "cat": "Công thức cộng",
+    "diff": "Dễ",
+    "q": "Công thức cộng: sin(a - b) bằng biểu thức nào sau đây?",
+    "formula": "sin(a - b) = ?",
+    "opts": [
+      "sin a cos b + cos a sin b",
+      "sin a cos b - cos a sin b",
+      "cos a cos b - sin a sin b",
+      "cos a cos b + sin a sin b"
+    ],
+    "ans": 1,
+    "exp": "sin(a - b) = sin a cos b - cos a sin b."
+  },
+  {
+    "id": 15,
+    "cat": "Công thức cộng",
+    "diff": "Dễ",
+    "q": "Công thức cộng: cos(a + b) bằng biểu thức nào sau đây?",
+    "formula": "cos(a + b) = ?",
+    "opts": [
+      "cos a cos b + sin a sin b",
+      "sin a cos b + cos a sin b",
+      "cos a cos b - sin a sin b",
+      "sin a cos b - cos a sin b"
+    ],
+    "ans": 2,
+    "exp": "cos cộng bằng cos cos trừ sin sin: cos(a + b) = cos a cos b - sin a sin b."
+  },
+  {
+    "id": 16,
+    "cat": "Công thức cộng",
+    "diff": "Dễ",
+    "q": "Công thức cộng: cos(a - b) bằng biểu thức nào sau đây?",
+    "formula": "cos(a - b) = ?",
+    "opts": [
+      "cos a cos b - sin a sin b",
+      "sin a cos b - cos a sin b",
+      "sin a cos b + cos a sin b",
+      "cos a cos b + sin a sin b"
+    ],
+    "ans": 3,
+    "exp": "cos trừ bằng cos cos cộng sin sin: cos(a - b) = cos a cos b + sin a sin b."
+  },
+  {
+    "id": 17,
+    "cat": "Công thức cộng",
+    "diff": "Trung bình",
+    "q": "Công thức cộng: tan(a + b) bằng biểu thức nào sau đây?",
+    "formula": "tan(a + b) = ?",
+    "opts": [
+      "(tan a + tan b) / (1 - tan a tan b)",
+      "(tan a - tan b) / (1 + tan a tan b)",
+      "(tan a + tan b) / (1 + tan a tan b)",
+      "tan a + tan b"
+    ],
+    "ans": 0,
+    "exp": "tan(a + b) = (tan a + tan b) / (1 - tan a tan b)."
+  },
+  {
+    "id": 18,
+    "cat": "Công thức cộng",
+    "diff": "Trung bình",
+    "q": "Công thức cộng: tan(a - b) bằng biểu thức nào sau đây?",
+    "formula": "tan(a - b) = ?",
+    "opts": [
+      "(tan a + tan b) / (1 - tan a tan b)",
+      "(tan a - tan b) / (1 + tan a tan b)",
+      "(tan a - tan b) / (1 - tan a tan b)",
+      "tan a - tan b"
+    ],
+    "ans": 1,
+    "exp": "tan(a - b) = (tan a - tan b) / (1 + tan a tan b)."
+  },
+  {
+    "id": 19,
+    "cat": "Công thức nhân đôi",
+    "diff": "Dễ",
+    "q": "Khẳng định nào sau đây ĐÚNG về công thức cos 2a theo cả cos và sin?",
+    "formula": "cos 2a = ?",
+    "opts": [
+      "cos²a + sin²a",
+      "sin²a - cos²a",
+      "cos²a - sin²a",
+      "2 cos a sin a"
+    ],
+    "ans": 2,
+    "exp": "cos 2a = cos²a - sin²a."
+  },
+  {
+    "id": 20,
+    "cat": "Công thức nhân đôi",
+    "diff": "Dễ",
+    "q": "Công thức nhân đôi: sin 2a bằng biểu thức nào?",
+    "formula": "sin 2a = ?",
+    "opts": [
+      "sin²a - cos²a",
+      "2 sin a",
+      "cos²a - sin²a",
+      "2 sin a cos a"
+    ],
+    "ans": 3,
+    "exp": "sin 2a = 2 sin a cos a."
+  },
+  {
+    "id": 21,
+    "cat": "Công thức nhân đôi",
+    "diff": "Dễ",
+    "q": "Công thức biểu diễn cos 2a chỉ theo cos a là:",
+    "formula": "cos 2a = ? (theo cos a)",
+    "opts": [
+      "2 cos²a - 1",
+      "1 - 2 cos²a",
+      "cos²a - 1",
+      "2 cos a - 1"
+    ],
+    "ans": 0,
+    "exp": "cos 2a = 2 cos²a - 1."
+  },
+  {
+    "id": 22,
+    "cat": "Công thức nhân đôi",
+    "diff": "Dễ",
+    "q": "Công thức biểu diễn cos 2a chỉ theo sin a là:",
+    "formula": "cos 2a = ? (theo sin a)",
+    "opts": [
+      "2 sin²a - 1",
+      "1 - 2 sin²a",
+      "1 - sin²a",
+      "2 sin a - 1"
+    ],
+    "ans": 1,
+    "exp": "cos 2a = 1 - 2 sin²a."
+  },
+  {
+    "id": 23,
+    "cat": "Công thức nhân đôi",
+    "diff": "Trung bình",
+    "q": "Công thức nhân đôi cho tan: tan 2a bằng gì?",
+    "formula": "tan 2a = ?",
+    "opts": [
+      "2 tan a / (1 + tan²a)",
+      "(1 - tan²a) / 2 tan a",
+      "2 tan a / (1 - tan²a)",
+      "tan²a - 1"
+    ],
+    "ans": 2,
+    "exp": "tan 2a = 2 tan a / (1 - tan²a)."
+  },
+  {
+    "id": 24,
+    "cat": "Công thức hạ bậc",
+    "diff": "Dễ",
+    "q": "Công thức hạ bậc: cos²a bằng bao nhiêu?",
+    "formula": "cos²a = ?",
+    "opts": [
+      "(1 - cos 2a) / 2",
+      "(1 + sin 2a) / 2",
+      "(1 - sin 2a) / 2",
+      "(1 + cos 2a) / 2"
+    ],
+    "ans": 3,
+    "exp": "cos²a = (1 + cos 2a) / 2."
+  },
+  {
+    "id": 25,
+    "cat": "Công thức hạ bậc",
+    "diff": "Dễ",
+    "q": "Công thức hạ bậc: sin²a bằng bao nhiêu?",
+    "formula": "sin²a = ?",
+    "opts": [
+      "(1 - cos 2a) / 2",
+      "(1 + cos 2a) / 2",
+      "(1 - sin 2a) / 2",
+      "1 - cos 2a"
+    ],
+    "ans": 0,
+    "exp": "sin²a = (1 - cos 2a) / 2."
+  },
+  {
+    "id": 26,
+    "cat": "Công thức hạ bậc",
+    "diff": "Trung bình",
+    "q": "Công thức hạ bậc cho tan: tan²a bằng biểu thức nào?",
+    "formula": "tan²a = ?",
+    "opts": [
+      "(1 + cos 2a) / (1 - cos 2a)",
+      "(1 - cos 2a) / (1 + cos 2a)",
+      "(1 - sin 2a) / (1 + sin 2a)",
+      "(1 + sin 2a) / (1 - sin 2a)"
+    ],
+    "ans": 1,
+    "exp": "tan²a = sin²a / cos²a = (1 - cos 2a) / (1 + cos 2a)."
+  },
+  {
+    "id": 27,
+    "cat": "Tích thành tổng",
+    "diff": "Trung bình",
+    "q": "Biến đổi tích thành tổng: sin a sin b bằng biểu thức nào?",
+    "formula": "sin a sin b = ?",
+    "opts": [
+      "1/2 [cos(a - b) + cos(a + b)]",
+      "1/2 [sin(a + b) - sin(a - b)]",
+      "1/2 [cos(a - b) - cos(a + b)]",
+      "-1/2 [cos(a - b) + cos(a + b)]"
+    ],
+    "ans": 2,
+    "exp": "sin a sin b = 1/2 [cos(a - b) - cos(a + b)]."
+  },
+  {
+    "id": 28,
+    "cat": "Tích thành tổng",
+    "diff": "Trung bình",
+    "q": "Biến đổi tích thành tổng: cos a cos b bằng biểu thức nào?",
+    "formula": "cos a cos b = ?",
+    "opts": [
+      "1/2 [cos(a - b) - cos(a + b)]",
+      "1/2 [sin(a + b) + sin(a - b)]",
+      "cos(a + b) + cos(a - b)",
+      "1/2 [cos(a - b) + cos(a + b)]"
+    ],
+    "ans": 3,
+    "exp": "cos a cos b = 1/2 [cos(a - b) + cos(a + b)]."
+  },
+  {
+    "id": 29,
+    "cat": "Tích thành tổng",
+    "diff": "Trung bình",
+    "q": "Biến đổi tích thành tổng: sin a cos b bằng biểu thức nào?",
+    "formula": "sin a cos b = ?",
+    "opts": [
+      "1/2 [sin(a + b) + sin(a - b)]",
+      "1/2 [sin(a + b) - sin(a - b)]",
+      "1/2 [cos(a + b) + cos(a - b)]",
+      "1/2 [cos(a + b) - cos(a - b)]"
+    ],
+    "ans": 0,
+    "exp": "sin a cos b = 1/2 [sin(a + b) + sin(a - b)]."
+  },
+  {
+    "id": 30,
+    "cat": "Tổng thành tích",
+    "diff": "Trung bình",
+    "q": "Biến đổi tổng thành tích: cos u + cos v bằng gì?",
+    "formula": "cos u + cos v = ?",
+    "opts": [
+      "-2 sin((u+v)/2) sin((u-v)/2)",
+      "2 cos((u+v)/2) cos((u-v)/2)",
+      "2 sin((u+v)/2) cos((u-v)/2)",
+      "2 cos((u+v)/2) sin((u-v)/2)"
+    ],
+    "ans": 1,
+    "exp": "cos cộng cos bằng 2 cos cos: cos u + cos v = 2 cos((u+v)/2) cos((u-v)/2)."
+  },
+  {
+    "id": 31,
+    "cat": "Tổng thành tích",
+    "diff": "Trung bình",
+    "q": "Biến đổi tổng thành tích: sin u + sin v bằng gì?",
+    "formula": "sin u + sin v = ?",
+    "opts": [
+      "2 cos((u+v)/2) sin((u-v)/2)",
+      "2 cos((u+v)/2) cos((u-v)/2)",
+      "2 sin((u+v)/2) cos((u-v)/2)",
+      "-2 sin((u+v)/2) cos((u-v)/2)"
+    ],
+    "ans": 2,
+    "exp": "sin cộng sin bằng 2 sin cos: sin u + sin v = 2 sin((u+v)/2) cos((u-v)/2)."
+  },
+  {
+    "id": 32,
+    "cat": "Tổng thành tích",
+    "diff": "Trung bình",
+    "q": "Biến đổi tổng thành tích: cos u - cos v bằng gì?",
+    "formula": "cos u - cos v = ?",
+    "opts": [
+      "2 sin((u+v)/2) sin((u-v)/2)",
+      "2 cos((u+v)/2) sin((u-v)/2)",
+      "-2 cos((u+v)/2) cos((u-v)/2)",
+      "-2 sin((u+v)/2) sin((u-v)/2)"
+    ],
+    "ans": 3,
+    "exp": "cos trừ cos bằng trừ 2 sin sin: cos u - cos v = -2 sin((u+v)/2) sin((u-v)/2)."
+  },
+  {
+    "id": 33,
+    "cat": "Tổng thành tích",
+    "diff": "Trung bình",
+    "q": "Biến đổi tổng thành tích: sin u - sin v bằng gì?",
+    "formula": "sin u - sin v = ?",
+    "opts": [
+      "2 cos((u+v)/2) sin((u-v)/2)",
+      "2 sin((u+v)/2) cos((u-v)/2)",
+      "-2 sin((u+v)/2) sin((u-v)/2)",
+      "2 cos((u+v)/2) cos((u-v)/2)"
+    ],
+    "ans": 0,
+    "exp": "sin trừ sin bằng 2 cos sin: sin u - sin v = 2 cos((u+v)/2) sin((u-v)/2)."
+  },
+  {
+    "id": 34,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của cos(π/6) (tức 30°) là:",
+    "formula": "cos(π/6) = ?",
+    "opts": [
+      "1/2",
+      "√3 / 2",
+      "√2 / 2",
+      "0"
+    ],
+    "ans": 1,
+    "exp": "cos(π/6) = cos(30°) = √3 / 2."
+  },
+  {
+    "id": 35,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của sin(π/6) (tức 30°) là:",
+    "formula": "sin(π/6) = ?",
+    "opts": [
+      "√3 / 2",
+      "√2 / 2",
+      "1/2",
+      "1"
+    ],
+    "ans": 2,
+    "exp": "sin(π/6) = sin(30°) = 1/2."
+  },
+  {
+    "id": 36,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của cos(π/4) (tức 45°) là:",
+    "formula": "cos(π/4) = ?",
+    "opts": [
+      "1/2",
+      "√3 / 2",
+      "1",
+      "√2 / 2"
+    ],
+    "ans": 3,
+    "exp": "cos(π/4) = sin(π/4) = √2 / 2."
+  },
+  {
+    "id": 37,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của tan(π/4) (tức 45°) là:",
+    "formula": "tan(π/4) = ?",
+    "opts": [
+      "1",
+      "√3",
+      "√3 / 3",
+      "0"
+    ],
+    "ans": 0,
+    "exp": "tan(π/4) = 1."
+  },
+  {
+    "id": 38,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của tan(π/3) (tức 60°) là:",
+    "formula": "tan(π/3) = ?",
+    "opts": [
+      "√3 / 3",
+      "√3",
+      "1",
+      "1/2"
+    ],
+    "ans": 1,
+    "exp": "tan(π/3) = √3."
+  },
+  {
+    "id": 39,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của sin(π/2) (tức 90°) là:",
+    "formula": "sin(π/2) = ?",
+    "opts": [
+      "0",
+      "-1",
+      "1",
+      "1/2"
+    ],
+    "ans": 2,
+    "exp": "sin(π/2) = 1, cos(π/2) = 0."
+  },
+  {
+    "id": 40,
+    "cat": "Góc đặc biệt",
+    "diff": "Dễ",
+    "q": "Giá trị lượng giác của cos(π) (tức 180°) là:",
+    "formula": "cos(π) = ?",
+    "opts": [
+      "1",
+      "0",
+      "1/2",
+      "-1"
+    ],
+    "ans": 3,
+    "exp": "cos(π) = -1, sin(π) = 0."
+  },
+  {
+    "id": 41,
+    "cat": "Hàm số lượng giác",
+    "diff": "Trung bình",
+    "q": "Chu kỳ tuần hoàn cơ bản của hàm số y = sin x là:",
+    "formula": "T của y = sin x là ?",
+    "opts": [
+      "2π",
+      "π",
+      "π/2",
+      "4π"
+    ],
+    "ans": 0,
+    "exp": "Hàm số y = sin x và y = cos x tuần hoàn với chu kỳ cơ sở T = 2π."
+  },
+  {
+    "id": 42,
+    "cat": "Hàm số lượng giác",
+    "diff": "Trung bình",
+    "q": "Chu kỳ tuần hoàn cơ bản của hàm số y = tan x là:",
+    "formula": "T của y = tan x là ?",
+    "opts": [
+      "2π",
+      "π",
+      "π/2",
+      "3π"
+    ],
+    "ans": 1,
+    "exp": "Hàm số y = tan x và y = cot x tuần hoàn với chu kỳ cơ sở T = π."
+  },
+  {
+    "id": 43,
+    "cat": "Hàm số lượng giác",
+    "diff": "Khó",
+    "q": "Tập xác định của hàm số y = cot x là:",
+    "formula": "D của y = cot x là ?",
+    "opts": [
+      "ℝ \\ {π/2 + kπ, k ∈ ℤ}",
+      "[-1; 1]",
+      "ℝ \\ {kπ, k ∈ ℤ}",
+      "ℝ \\ {π/2 + k2π, k ∈ ℤ}"
+    ],
+    "ans": 2,
+    "exp": "cot x = cos x / sin x xác định khi sin x ≠ 0 <=> x ≠ kπ (k ∈ ℤ)."
+  },
+  {
+    "id": 44,
+    "cat": "Hàm số lượng giác",
+    "diff": "Khó",
+    "q": "Tập xác định của hàm số y = tan x là:",
+    "formula": "D của y = tan x là ?",
+    "opts": [
+      "ℝ \\ {kπ, k ∈ ℤ}",
+      "ℝ \\ {k2π, k ∈ ℤ}",
+      "[-1; 1]",
+      "ℝ \\ {π/2 + kπ, k ∈ ℤ}"
+    ],
+    "ans": 3,
+    "exp": "tan x = sin x / cos x xác định khi cos x ≠ 0 <=> x ≠ π/2 + kπ (k ∈ ℤ)."
+  },
+  {
+    "id": 45,
+    "cat": "Hàm số lượng giác",
+    "diff": "Khó",
+    "q": "Tập giá trị của hàm số y = 3 sin x - 2 là:",
+    "formula": "Tập giá trị của y = 3 sin x - 2 là ?",
+    "opts": [
+      "[-5; 1]",
+      "[-1; 5]",
+      "[-3; 3]",
+      "[-5; 5]"
+    ],
+    "ans": 0,
+    "exp": "-1 ≤ sin x ≤ 1 => -3 ≤ 3 sin x ≤ 3 => -5 ≤ 3 sin x - 2 ≤ 1."
+  },
+  {
+    "id": 46,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác sin x = 0 là:",
+    "formula": "sin x = 0 <=> x = ?",
+    "opts": [
+      "k2π (k ∈ ℤ)",
+      "kπ (k ∈ ℤ)",
+      "π/2 + kπ (k ∈ ℤ)",
+      "π + k2π (k ∈ ℤ)"
+    ],
+    "ans": 1,
+    "exp": "sin x = 0 <=> x = kπ (k ∈ ℤ)."
+  },
+  {
+    "id": 47,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác sin x = 1 là:",
+    "formula": "sin x = 1 <=> x = ?",
+    "opts": [
+      "k2π (k ∈ ℤ)",
+      "π/2 + kπ (k ∈ ℤ)",
+      "π/2 + k2π (k ∈ ℤ)",
+      "-π/2 + k2π (k ∈ ℤ)"
+    ],
+    "ans": 2,
+    "exp": "sin x = 1 <=> x = π/2 + k2π (k ∈ ℤ)."
+  },
+  {
+    "id": 48,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác cos x = 0 là:",
+    "formula": "cos x = 0 <=> x = ?",
+    "opts": [
+      "kπ (k ∈ ℤ)",
+      "k2π (k ∈ ℤ)",
+      "π/2 + k2π (k ∈ ℤ)",
+      "π/2 + kπ (k ∈ ℤ)"
+    ],
+    "ans": 3,
+    "exp": "cos x = 0 <=> x = π/2 + kπ (k ∈ ℤ)."
+  },
+  {
+    "id": 49,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác tan x = 1 là:",
+    "formula": "tan x = 1 <=> x = ?",
+    "opts": [
+      "π/4 + kπ (k ∈ ℤ)",
+      "π/4 + k2π (k ∈ ℤ)",
+      "-π/4 + kπ (k ∈ ℤ)",
+      "kπ (k ∈ ℤ)"
+    ],
+    "ans": 0,
+    "exp": "tan x = 1 = tan(π/4) <=> x = π/4 + kπ (k ∈ ℤ)."
+  },
+  {
+    "id": 50,
+    "cat": "Phương trình lượng giác",
+    "diff": "Khó",
+    "q": "Phương trình sin x = m có nghiệm khi nào?",
+    "formula": "sin x = m có nghiệm khi ?",
+    "opts": [
+      "m ≥ 1",
+      "-1 ≤ m ≤ 1",
+      "m ≤ -1",
+      "m ∈ ℝ"
+    ],
+    "ans": 1,
+    "exp": "Tập giá trị của sin x là [-1; 1], do đó phương trình có nghiệm khi -1 ≤ m ≤ 1."
+  },
+  {
+    "id": 51,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác cos x = 1 là:",
+    "formula": "cos x = 1 <=> x = ?",
+    "opts": [
+      "kπ (k ∈ ℤ)",
+      "π/2 + k2π (k ∈ ℤ)",
+      "k2π (k ∈ ℤ)",
+      "π + k2π (k ∈ ℤ)"
+    ],
+    "ans": 2,
+    "exp": "cos x = 1 <=> x = k2π (k ∈ ℤ)."
+  },
+  {
+    "id": 52,
+    "cat": "Phương trình lượng giác",
+    "diff": "Trung bình",
+    "q": "Nghiệm của phương trình lượng giác cos x = -1 là:",
+    "formula": "cos x = -1 <=> x = ?",
+    "opts": [
+      "k2π (k ∈ ℤ)",
+      "π/2 + kπ (k ∈ ℤ)",
+      "-π/2 + k2π (k ∈ ℤ)",
+      "π + k2π (k ∈ ℤ)"
+    ],
+    "ans": 3,
+    "exp": "cos x = -1 <=> x = π + k2π (k ∈ ℤ)."
+  },
+  {
+    "id": 53,
+    "cat": "Hàm số lượng giác",
+    "diff": "Dễ",
+    "q": "Chu kỳ tuần hoàn của hàm số lượng giác cơ bản y = sin x là bao nhiêu?",
+    "formula": "Chu kỳ T của y = sin x là ?",
+    "opts": [
+      "2π",
+      "π",
+      "π/2",
+      "4π"
+    ],
+    "ans": 0,
+    "exp": "Hàm số lượng giác y = sin x tuần hoàn với chu kỳ nhỏ nhất là T = 2π."
+  },
+  {
+    "id": 54,
+    "cat": "Hàm số lượng giác",
+    "diff": "Dễ",
+    "q": "Chu kỳ tuần hoàn của hàm số lượng giác cơ bản y = cos x là bao nhiêu?",
+    "formula": "Chu kỳ T của y = cos x là ?",
+    "opts": [
+      "π",
+      "2π",
+      "π/2",
+      "3π"
+    ],
+    "ans": 1,
+    "exp": "Hàm số lượng giác y = cos x tuần hoàn với chu kỳ nhỏ nhất là T = 2π."
+  },
+  {
+    "id": 55,
+    "cat": "Hàm số lượng giác",
+    "diff": "Dễ",
+    "q": "Chu kỳ tuần hoàn của hàm số lượng giác y = tan x là bao nhiêu?",
+    "formula": "Chu kỳ T của y = tan x là ?",
+    "opts": [
+      "2π",
+      "π/2",
+      "π",
+      "4π"
+    ],
+    "ans": 2,
+    "exp": "Hàm số y = tan x tuần hoàn với chu kỳ nhỏ nhất là T = π."
+  },
+  {
+    "id": 56,
+    "cat": "Hàm số lượng giác",
+    "diff": "Dễ",
+    "q": "Chu kỳ tuần hoàn của hàm số lượng giác y = cot x là bao nhiêu?",
+    "formula": "Chu kỳ T của y = cot x là ?",
+    "opts": [
+      "2π",
+      "π/2",
+      "3π",
+      "π"
+    ],
+    "ans": 3,
+    "exp": "Hàm số y = cot x tuần hoàn với chu kỳ nhỏ nhất là T = π."
+  },
+  {
+    "id": 57,
+    "cat": "Hệ thức cơ bản",
+    "diff": "Khó",
+    "q": "Nếu sin α + cos α = m thì biểu thức sin 2α bằng bao nhiêu?",
+    "formula": "sin α + cos α = m => sin 2α = ?",
+    "opts": [
+      "m² - 1",
+      "1 - m²",
+      "m² + 1",
+      "(m² - 1) / 2"
+    ],
+    "ans": 0,
+    "exp": "(sin α + cos α)² = sin²α + cos²α + 2sin α cos α = 1 + sin 2α = m² => sin 2α = m² - 1."
+  },
+  {
+    "id": 58,
+    "cat": "Công thức hạ bậc",
+    "diff": "Trung bình",
+    "q": "Biểu thức hạ bậc: 2sin²(x/2) được viết lại theo cos x là:",
+    "formula": "2sin²(x/2) = ?",
+    "opts": [
+      "1 + cos x",
+      "1 - cos x",
+      "1 - sin x",
+      "cos x - 1"
+    ],
+    "ans": 1,
+    "exp": "Từ cos x = 1 - 2sin²(x/2) suy ra 2sin²(x/2) = 1 - cos x."
+  },
+  {
+    "id": 59,
+    "cat": "Công thức hạ bậc",
+    "diff": "Trung bình",
+    "q": "Biểu thức hạ bậc: 2cos²(x/2) được viết lại theo cos x là:",
+    "formula": "2cos²(x/2) = ?",
+    "opts": [
+      "1 - cos x",
+      "1 + sin x",
+      "1 + cos x",
+      "cos x - 1"
+    ],
+    "ans": 2,
+    "exp": "Từ cos x = 2cos²(x/2) - 1 suy ra 2cos²(x/2) = 1 + cos x."
+  },
+  {
+    "id": 60,
+    "cat": "Phương trình lượng giác",
+    "diff": "Khó",
+    "q": "Phương trình lượng giác cos x = m có nghiệm khi và chỉ khi:",
+    "formula": "cos x = m có nghiệm <=> ?",
+    "opts": [
+      "m ≥ 1",
+      "m ≤ -1",
+      "m ∈ ℝ",
+      "-1 ≤ m ≤ 1"
+    ],
+    "ans": 3,
+    "exp": "Tập giá trị của cos x là [-1; 1], nên phương trình cos x = m có nghiệm khi -1 ≤ m ≤ 1."
+  }
+];
+
+    // Hàm tạo bộ bài phân bố đều 100% cho 4 đáp án (25% mỗi lựa chọn)
+    function createBalancedDeck() {
+      const poolA = QUESTIONS.filter(q => q.ans === 0);
+      const poolB = QUESTIONS.filter(q => q.ans === 1);
+      const poolC = QUESTIONS.filter(q => q.ans === 2);
+      const poolD = QUESTIONS.filter(q => q.ans === 3);
+
+      const shuffle = arr => {
+        const res = [...arr];
+        for (let i = res.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [res[i], res[j]] = [res[j], res[i]];
+        }
+        return res;
+      };
+
+      const sA = shuffle(poolA);
+      const sB = shuffle(poolB);
+      const sC = shuffle(poolC);
+      const sD = shuffle(poolD);
+
+      const deck = [];
+      const minLen = Math.min(sA.length, sB.length, sC.length, sD.length);
+
+      for (let i = 0; i < minLen; i++) {
+        const pack = [sA[i], sB[i], sC[i], sD[i]];
+        deck.push(...shuffle(pack));
+      }
+      return deck;
+    }
+
+    // --- TRẠNG THÁI GAME ---
+    const PLAYER_NAMES = ["P1 (Mèo Đỏ 🐱)", "P2 (Cánh Cụt 🐧)", "P3 (Ếch Xanh 🐸)", "P4 (Vịt Vàng 🐥)"];
+    const PLAYER_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b"];
+
+    let scores = [0, 0, 0, 0];
+    let matchDuration = 300; // 5 phút mặc định
+    let timeLeft = 300;
+    let matchTimer = null;
+    let buzzTimer = null;
+    let buzzedPlayer = null;
+    let buzzCountdown = 5;
+    let lockedPlayers = new Set();
+    let eliminatedOptions = new Set();
+    let isAnswerRevealed = false;
+    let currentQ = null;
+    let questionCounter = 0;
+    let isGameRunning = false;
+    let reviewedHistory = [];
+    let questionDeck = [];
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    function updateScoreboard() {
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById("score-p" + i).innerText = scores[i - 1];
+      }
+    }
+
+    function clearBuzzerState() {
+      if (buzzTimer) clearInterval(buzzTimer);
+      buzzedPlayer = null;
+      eliminatedOptions.clear();
+      isAnswerRevealed = false;
+
+      for (let i = 1; i <= 4; i++) {
+        document.getElementById("corner-p" + i).classList.remove("buzzed-active");
+      }
+      const statusEl = document.getElementById("buzzer-status");
+      statusEl.style.display = "none";
+
+      const optBtns = document.querySelectorAll(".option-btn");
+      optBtns.forEach(b => b.disabled = true);
+    }
+
+    function updateCornersLockState() {
+      for (let i = 1; i <= 4; i++) {
+        const corner = document.getElementById("corner-p" + i);
+        if (lockedPlayers.has(i)) {
+          corner.classList.add("locked-out");
+        } else {
+          corner.classList.remove("locked-out");
+        }
+      }
+    }
+
+    function recordQuestionReview(item) {
+      reviewedHistory.unshift(item);
+      updateReviewedCount();
+    }
+
+    function updateReviewedCount() {
+      document.getElementById("reviewed-count").innerText = reviewedHistory.length;
+    }
+
+    // --- BÀN PHÍM ĐIỀU KHIỂN ---
+    window.addEventListener("keydown", (e) => {
+      if (!isGameRunning) return;
+      const key = e.key;
+
+      if (key === "s" || key === "S") {
+        skipCurrentQuestion();
+        return;
+      }
+
+      if (buzzedPlayer === null) {
+        if (key === "w" || key === "W") playerBuzz(1);
+        else if (key === "i" || key === "I") playerBuzz(2);
+        else if (key === "c" || key === "C") playerBuzz(3);
+        else if (key === "n" || key === "N" || key === "ArrowUp") playerBuzz(4);
+      } else {
+        if (key === "1" || key === "a" || key === "A") submitAnswer(0);
+        else if (key === "2" || key === "b" || key === "B") submitAnswer(1);
+        else if (key === "3" || key === "c" || key === "C") submitAnswer(2);
+        else if (key === "4" || key === "d" || key === "D") submitAnswer(3);
+      }
+    });
+
+    function beginCountdown() {
+      const selectDur = document.getElementById("select-duration");
+      matchDuration = parseInt(selectDur.value) || 300;
+      timeLeft = matchDuration;
+
+      document.getElementById("start-modal").style.display = "none";
+      const countOverlay = document.getElementById("countdown-modal");
+      const countNum = document.getElementById("countdown-num");
+      countOverlay.style.display = "flex";
+
+      let count = 3;
+      countNum.innerText = count;
+      audio.playBeep();
+
+      const timer = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countNum.innerText = count;
+          audio.playBeep();
+        } else if (count === 0) {
+          countNum.innerText = "CHIẾN!";
+          audio.playBuzzer();
+        } else {
+          clearInterval(timer);
+          countOverlay.style.display = "none";
+          startGame();
+        }
+      }, 900);
+    }
+
+    function startGame() {
+      scores = [0, 0, 0, 0];
+      reviewedHistory = [];
+      questionCounter = 0;
+      isGameRunning = true;
+      questionDeck = createBalancedDeck();
+      updateScoreboard();
+      updateReviewedCount();
+      document.getElementById("time-display").innerText = formatTime(timeLeft);
+      nextQuestion();
+
+      clearInterval(matchTimer);
+      matchTimer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time-display").innerText = formatTime(timeLeft);
+        if (timeLeft <= 0) {
+          endGame("Hết giờ thi đấu " + Math.floor(matchDuration / 60) + " phút!");
+        }
+      }, 1000);
+    }
+
+    function nextQuestion() {
+      clearBuzzerState();
+      lockedPlayers.clear();
+      updateCornersLockState();
+
+      questionCounter++;
+      document.getElementById("q-counter").innerText = questionCounter;
+
+      if (questionDeck.length === 0) {
+        questionDeck = createBalancedDeck();
+      }
+      currentQ = questionDeck.shift() || QUESTIONS[0];
+
+      document.getElementById("cat-display").innerText = currentQ.cat;
+      const diffBadge = document.getElementById("diff-badge");
+      diffBadge.innerText = currentQ.diff;
+      diffBadge.className = "diff-badge " + (currentQ.diff === "Dễ" ? "diff-de" : currentQ.diff === "Trung bình" ? "diff-tb" : "diff-kho");
+
+      document.getElementById("q-title").innerText = currentQ.q;
+      document.getElementById("q-formula").innerText = currentQ.formula;
+      document.getElementById("explanation-box").innerText = "💡 Bấm chuông (W, I, C, N) để giành quyền trả lời, hoặc bấm (S) để Bỏ qua!";
+
+      for (let i = 0; i < 4; i++) {
+        const btn = document.querySelectorAll(".option-btn")[i];
+        const textEl = document.getElementById("opt-text-" + i);
+        const optVal = currentQ.opts[i];
+        textEl.innerText = optVal;
+
+        // Tự động cho bé phông chữ lại đối với những câu trả lời dài
+        if (optVal.length > 25) {
+          textEl.style.fontSize = "13px";
+          textEl.style.letterSpacing = "0px";
+        } else if (optVal.length > 15) {
+          textEl.style.fontSize = "15px";
+          textEl.style.letterSpacing = "0.2px";
+        } else {
+          textEl.style.fontSize = "18px";
+          textEl.style.letterSpacing = "0.3px";
+        }
+
+        btn.classList.remove("opt-correct", "opt-wrong");
+        btn.disabled = true;
+      }
+    }
+
+    function skipCurrentQuestion() {
+      if (!isGameRunning) return;
+      audio.playBeep();
+
+      recordQuestionReview({
+        q: currentQ.q,
+        formula: currentQ.formula,
+        correctText: currentQ.opts[currentQ.ans],
+        explanation: currentQ.exp,
+        status: "Bỏ qua",
+        playerResult: "Cả nhóm bỏ qua câu khó",
+        color: "#94a3b8"
+      });
+
+      document.getElementById("explanation-box").innerHTML = "⏭️ <strong>Đã bỏ qua câu hỏi!</strong> Đáp án: " + currentQ.opts[currentQ.ans] + ". " + currentQ.exp;
+
+      setTimeout(() => nextQuestion(), 1300);
+    }
+
+    function playerBuzz(playerIdx) {
+      if (!isGameRunning) return;
+      if (buzzedPlayer !== null) return;
+      if (lockedPlayers.has(playerIdx)) return;
+
+      buzzedPlayer = playerIdx;
+      audio.playBuzzer();
+
+      const corner = document.getElementById("corner-p" + playerIdx);
+      corner.classList.add("buzzed-active");
+
+      const optBtns = document.querySelectorAll(".option-btn");
+      optBtns.forEach((b, idx) => {
+        if (!eliminatedOptions.has(idx)) {
+          b.disabled = false;
+        }
+      });
+
+      const statusEl = document.getElementById("buzzer-status");
+      statusEl.style.display = "block";
+      statusEl.style.background = PLAYER_COLORS[playerIdx - 1];
+      statusEl.style.color = playerIdx === 4 ? "#000" : "#fff";
+
+      buzzCountdown = 5;
+      statusEl.innerText = "🔔 " + PLAYER_NAMES[playerIdx - 1] + " GIÀNH QUYỀN TRẢ LỜI! (" + buzzCountdown + "s)";
+
+      if (buzzTimer) clearInterval(buzzTimer);
+      buzzTimer = setInterval(() => {
+        buzzCountdown--;
+        if (buzzCountdown > 0) {
+          statusEl.innerText = "🔔 " + PLAYER_NAMES[playerIdx - 1] + " GIÀNH QUYỀN TRẢ LỜI! (" + buzzCountdown + "s)";
+        } else {
+          clearInterval(buzzTimer);
+          handleWrongAnswer("Hết 5 giây suy nghĩ!");
+        }
+      }, 1000);
+    }
+
+    function submitAnswer(chosenIdx) {
+      if (!isGameRunning || buzzedPlayer === null) return;
+      if (buzzTimer) clearInterval(buzzTimer);
+
+      const isCorrect = chosenIdx === currentQ.ans;
+      const optBtns = document.querySelectorAll(".option-btn");
+
+      if (isCorrect) {
+        audio.playCorrect();
+        isAnswerRevealed = true;
+        optBtns[chosenIdx].classList.add("opt-correct");
+        scores[buzzedPlayer - 1] += 10;
+        updateScoreboard();
+
+        recordQuestionReview({
+          q: currentQ.q,
+          formula: currentQ.formula,
+          correctText: currentQ.opts[currentQ.ans],
+          explanation: currentQ.exp,
+          status: "Đúng",
+          playerResult: PLAYER_NAMES[buzzedPlayer - 1] + " trả lời chính xác (+10đ)",
+          color: PLAYER_COLORS[buzzedPlayer - 1]
+        });
+
+        document.getElementById("explanation-box").innerHTML = "✅ <strong>Chính xác (+10đ)!</strong> " + currentQ.exp;
+
+        if (scores[buzzedPlayer - 1] >= 50) {
+          setTimeout(() => endGame(PLAYER_NAMES[buzzedPlayer - 1] + " đã xuất sắc cán mốc 50 điểm trước!"), 1000);
+          return;
+        }
+
+        setTimeout(() => nextQuestion(), 1600);
+      } else {
+        // Trả lời sai: Đánh dấu phương án đó sai, KHÔNG HIỆN ĐÁP ÁN ĐÚNG!
+        eliminatedOptions.add(chosenIdx);
+        optBtns[chosenIdx].classList.add("opt-wrong");
+        optBtns[chosenIdx].disabled = true;
+
+        handleWrongAnswer("Trả lời chưa chính xác (-5đ)!");
+      }
+    }
+
+    function handleWrongAnswer(reason) {
+      audio.playWrong();
+      const failedPlayerName = PLAYER_NAMES[buzzedPlayer - 1];
+      const failedPlayerIdx = buzzedPlayer;
+
+      // Trừ 5 điểm khi trả lời sai (tối thiểu 0 điểm)
+      scores[buzzedPlayer - 1] = Math.max(0, scores[buzzedPlayer - 1] - 5);
+      updateScoreboard();
+
+      lockedPlayers.add(failedPlayerIdx);
+      clearBuzzerState();
+      updateCornersLockState();
+
+      if (lockedPlayers.size >= 4) {
+        // Cả 4 đội đều sai: Lúc này mới công bố đáp án đúng!
+        const optBtns = document.querySelectorAll(".option-btn");
+        optBtns[currentQ.ans].classList.add("opt-correct");
+
+        document.getElementById("explanation-box").innerHTML = "❌ <strong>Cả 4 đội đều chưa đúng!</strong> Đáp án: " + currentQ.opts[currentQ.ans] + ". " + currentQ.exp;
+
+        recordQuestionReview({
+          q: currentQ.q,
+          formula: currentQ.formula,
+          correctText: currentQ.opts[currentQ.ans],
+          explanation: currentQ.exp,
+          status: "Sai",
+          playerResult: "Cả 4 đội đều không vượt qua câu này",
+          color: "#ef4444"
+        });
+
+        setTimeout(() => nextQuestion(), 2400);
+      } else {
+        // KHÔNG HIỆN ĐÁP ÁN ĐÚNG! Nhường quyền cho các đội còn lại!
+        const rem = 4 - lockedPlayers.size;
+        document.getElementById("explanation-box").innerHTML = "❌ <strong>" + failedPlayerName + "</strong> trả lời sai (-1đ)! Chuông đã mở lại cho " + rem + " đội còn lại cướp lượt!";
+      }
+    }
+
+    function endGame(reason) {
+      isGameRunning = false;
+      clearInterval(matchTimer);
+      if (buzzTimer) clearInterval(buzzTimer);
+
+      let topScore = -1;
+      let winnerIdx = 0;
+      scores.forEach((s, i) => {
+        if (s > topScore) {
+          topScore = s;
+          winnerIdx = i;
+        }
+      });
+
+      document.getElementById("winner-title").innerText = PLAYER_NAMES[winnerIdx] + " CHIẾN THẮNG!";
+      document.getElementById("winner-desc").innerText = reason + " • Tổng điểm: " + topScore + " điểm.";
+
+      const grid = document.getElementById("final-scores-grid");
+      grid.innerHTML = scores.map((s, i) =>
+        "<div style="background:#020617; border:1px solid " + PLAYER_COLORS[i] + "; border-radius:12px; padding:10px;">" +
+          "<div style="font-size:11px; font-weight:800; color:" + PLAYER_COLORS[i] + ";">" + PLAYER_NAMES[i] + "</div>" +
+          "<div style="font-size:22px; font-weight:900; font-family:monospace; color:#fff; margin-top:4px;">" + s + "đ</div>" +
+        "</div>"
+      ).join("");
+
+      document.getElementById("victory-modal").style.display = "flex";
+      startFireworks();
+    }
+
+    function openReviewModal() {
+      const container = document.getElementById("review-items-container");
+      if (reviewedHistory.length === 0) {
+        container.innerHTML = "<div style="text-align:center; padding:24px; color:#94a3b8;">Chưa có câu hỏi nào được giải. Hãy bắt đầu trận đấu!</div>";
+      } else {
+        container.innerHTML = reviewedHistory.map(item =>
+          "<div class="review-item" style="border-left: 3px solid " + item.color + ";">" +
+            "<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">" +
+              "<strong style="color:#f1f5f9;">" + item.q + "</strong>" +
+              "<span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:#1e293b;">" + item.status + "</span>" +
+            "</div>" +
+            "<div style="font-family:Georgia,serif; font-size:14px; color:#38bdf8; font-weight:700; margin:4px 0;">" + item.formula + "</div>" +
+            "<div style="color:#34d399; font-weight:600;">✓ Đáp án: " + item.correctText + "</div>" +
+            "<div style="color:#94a3b8; font-size:11px; margin-top:2px;">💡 " + item.explanation + "</div>" +
+            "<div style="font-size:10px; color:#cbd5e1; margin-top:4px;">• " + item.playerResult + "</div>" +
+          "</div>"
+        ).join("");
+      }
+      document.getElementById("review-modal").style.display = "flex";
+    }
+
+    function closeReviewModal() {
+      document.getElementById("review-modal").style.display = "none";
+    }
+
+    function resetGame() {
+      stopFireworks();
+      document.getElementById("victory-modal").style.display = "none";
+      document.getElementById("start-modal").style.display = "flex";
+    }
+
+    // --- PHÁO HOA CANVAS ---
+    let fireworksAnim = null;
+    function startFireworks() {
+      const canvas = document.getElementById("fireworks-canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const particles = [];
+      for (let i = 0; i < 160; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 2,
+          vx: (Math.random() - 0.5) * 12,
+          vy: (Math.random() - 0.5) * 12 - 3,
+          color: ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#ec4899", "#8b5cf6"][Math.floor(Math.random() * 6)],
+          radius: Math.random() * 4 + 2,
+          alpha: 1,
+          decay: Math.random() * 0.015 + 0.008
+        });
+      }
+
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.15;
+          p.alpha -= p.decay;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        if (particles.some(p => p.alpha > 0)) {
+          fireworksAnim = requestAnimationFrame(loop);
+        }
+      }
+      loop();
+    }
+
+    function stopFireworks() {
+      if (fireworksAnim) cancelAnimationFrame(fireworksAnim);
+      const canvas = document.getElementById("fireworks-canvas");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "Game Master 4P: Nhập Vai Phiêu Lưu Kịch Tính",
+  "description": "Trò chơi nhập vai phiêu lưu tương tác nhóm 4 người chơi được điều hành bởi Game Master AI thông minh. Đầy đủ xúc xắc D20, quản lý HP, tài nguyên và cốt truyện kịch tính.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
